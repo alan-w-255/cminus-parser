@@ -154,6 +154,7 @@ typedef struct treeNode
     char *name;// 如果是id 或者函数节点
     Array* arr;// 如果是数组节点
   } attr;
+  int index;
 
   TypeSpecifier type; /* for type checking of exps */
 } TreeNode;

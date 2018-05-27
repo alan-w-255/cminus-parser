@@ -138,12 +138,12 @@ TreeNode *var_declaration()
     char *len_str = token->tokenString;
     match(NUM);
     int len = atoi(len_str);
-    tr = newDclrNode(VarArrK, ts, idName, len, NULL, NULL);
+    tr = newDclrNode(VarArrK, ts, idName, len, NULL, NULL, token->lineno);
     match(RBRACKET);
   }
   else
   {
-    tr = newDclrNode(VarK, ts, idName, 0, NULL, NULL);
+    tr = newDclrNode(VarK, ts, idName, 0, NULL, NULL, token->lineno);
   }
   match(SEMI);
 
@@ -162,7 +162,7 @@ TreeNode *fun_declaration()
   TreeNode *_params = params();
   match(RPAREN);
   TreeNode *_compound_stmt = compound_stmt();
-  tr = newDclrNode(FunK, ts, idName, 0, _params, _compound_stmt);
+  tr = newDclrNode(FunK, ts, idName, 0, _params, _compound_stmt, token->lineno);
   return tr;
 }
 
@@ -179,7 +179,7 @@ TreeNode *params()
     // 无参数
     unmatch();
     match(VOID);
-    tr = newDclrNode(VarK, Void, NULL, 0, NULL, NULL);
+    tr = newDclrNode(VarK, Void, NULL, 0, NULL, NULL, token->lineno);
   }
   else
   {
@@ -212,19 +212,19 @@ TreeNode *param()
   if (token->type == LBRACKET)
   {
     match(LBRACKET);
-    tr = newDclrNode(VarArrK, ts, idName, 0, NULL, NULL);
+    tr = newDclrNode(VarArrK, ts, idName, 0, NULL, NULL, token->lineno);
     match(RBRACKET);
   }
   else
   {
-    tr = newDclrNode(VarK, ts, idName, 0, NULL, NULL);
+    tr = newDclrNode(VarK, ts, idName, 0, NULL, NULL, token->lineno);
   }
   return tr;
 }
 
 TreeNode *compound_stmt()
 {
-  TreeNode *cs = newStmtNode(CompoundK);
+  TreeNode *cs = newStmtNode(CompoundK, token->lineno);
   match(LBRACE);
   if (token->type == INT || token->type == VOID)
   {
@@ -297,7 +297,7 @@ TreeNode *statement()
 
 TreeNode *selection_stmt()
 {
-  TreeNode *tr = newStmtNode(SelectionK);
+  TreeNode *tr = newStmtNode(SelectionK, token->lineno);
   match(IF);
   match(LPAREN);
   tr->child[0] = expression();
@@ -313,7 +313,7 @@ TreeNode *selection_stmt()
 
 TreeNode *iteration_stmt()
 {
-  TreeNode *tr = newStmtNode(IterationK);
+  TreeNode *tr = newStmtNode(IterationK, token->lineno);
   match(WHILE);
   match(LPAREN);
   tr->child[0] = expression();
@@ -324,7 +324,7 @@ TreeNode *iteration_stmt()
 
 TreeNode *return_stmt()
 {
-  TreeNode *tr = newStmtNode(ReturnK);
+  TreeNode *tr = newStmtNode(ReturnK, token->lineno);
   match(RETURN);
   tr->child[0] = expression();
   match(SEMI);
@@ -348,8 +348,8 @@ TreeNode *expression()
     match(ID);
     if (token->type == ASSIGN) // ID赋值语句
     {
-      tr = newStmtNode(ASSIGNK);
-      tr->child[0] = newExpNode(IdK, Integer);
+      tr = newStmtNode(ASSIGNK, token->lineno);
+      tr->child[0] = newExpNode(IdK, Integer, token->lineno);
       tr->child[0]->attr.name = idName;
       match(ASSIGN);
       tr->child[1] = expression();
@@ -358,7 +358,7 @@ TreeNode *expression()
     {
       if (token->type == LBRACKET) // 数组
       {
-        TreeNode *tp = newExpNode(IdArrK, Integer);
+        TreeNode *tp = newExpNode(IdArrK, Integer, token->lineno);
         tp->attr.name = idName;
         match(LBRACKET);
         TreeNode *tt = expression();
@@ -366,7 +366,7 @@ TreeNode *expression()
         match(RBRACKET);
         if (token->type == ASSIGN) // 数组下标赋值语句
         {
-          tr = newStmtNode(ASSIGNK);
+          tr = newStmtNode(ASSIGNK, token->lineno);
           tr->child[0] = tp;
           match(ASSIGN);
           tr->child[1] = expression();
@@ -400,7 +400,7 @@ TreeNode *simple_exp()
   while (token->type == LE || token->type == LT || token->type == GT || token->type == GE ||
          token->type == EQ || token->type == NE)
   {
-    TreeNode *p = newExpNode(OpK, Integer);
+    TreeNode *p = newExpNode(OpK, Integer, token->lineno);
     if (p != NULL)
     {
       p->child[0] = tr;
@@ -418,7 +418,7 @@ TreeNode *additive_exp()
   TreeNode *tr = term();
   while (token->type == PLUS || token->type == SUB)
   {
-    TreeNode *p = newExpNode(OpK, Integer);
+    TreeNode *p = newExpNode(OpK, Integer, token->lineno);
     if (p != NULL)
     {
       p->child[0] = tr;
@@ -436,7 +436,7 @@ TreeNode *term()
   TreeNode *t = factor();
   while (token->type == MUL || token->type == DIV)
   {
-    TreeNode *p = newExpNode(OpK, Integer);
+    TreeNode *p = newExpNode(OpK, Integer, token->lineno);
     if (p != NULL)
     {
       p->child[0] = t;
@@ -462,7 +462,7 @@ TreeNode *factor()
     match(RPAREN);
     break;
   case NUM:
-    t = newExpNode(ConstK, Integer);
+    t = newExpNode(ConstK, Integer, token->lineno);
     t->attr.val = atoi(token->tokenString);
     match(NUM);
     break;
@@ -471,7 +471,7 @@ TreeNode *factor()
     if (token->type == LBRACKET)
     { //Id [expression]
       match(LBRACKET);
-      t = newExpNode(IdArrK, Integer);
+      t = newExpNode(IdArrK, Integer, token->lineno);
       t->child[0] = expression();
       t->attr.name = idName;
       match(RBRACKET);
@@ -479,14 +479,14 @@ TreeNode *factor()
     else if (token->type == LPAREN)
     { // call
       match(LPAREN);
-      t = newExpNode(CallK, Integer);
+      t = newExpNode(CallK, Integer, token->lineno);
       t->attr.name = idName;
       t->child[0] = args();
       match(RPAREN);
     }
     else
     { // ID
-      t = newExpNode(IdK, Integer);
+      t = newExpNode(IdK, Integer, token->lineno);
       t->attr.name = idName;
     }
     break;
@@ -523,7 +523,7 @@ TreeNode *args()
 static void syntaxError(char *message)
 {
   fprintf(listing, "\n>>> ");
-  fprintf(listing, "Syntax error at line %d: %s", lineno, message);
+  fprintf(listing, "Syntax error at line %d: %s", token->lineno, message);
   Error = TRUE;
 }
 

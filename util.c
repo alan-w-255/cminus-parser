@@ -37,7 +37,7 @@ void printToken(TokenType token, const char *tokenString)
     fprintf(listing, ">=\n");
     break;
   case GT:
-    fprintf(listing, "<\n");
+    fprintf(listing, ">\n");
     break;
   case LBRACE:
     fprintf(listing, "{\n");
@@ -95,7 +95,7 @@ void printToken(TokenType token, const char *tokenString)
     break;
   default: /* should never happen */
     fprintf(listing, "Unknown token: %d\n", token);
-  } // TODO: add some state !done
+  }
 }
 
 /* Function newStmtNode creates a new statement
@@ -103,13 +103,13 @@ void printToken(TokenType token, const char *tokenString)
  */
 
 // todo: 创建新的声明节点
-TreeNode *newDclrNode(DclrKind kind, TypeSpecifier type, char* idName, int len, TreeNode* prms, TreeNode* CompoundStmt)
+TreeNode *newDclrNode(DclrKind kind, TypeSpecifier type, char *idName, int len, TreeNode *prms, TreeNode *CompoundStmt, int lineNo)
 {
   TreeNode *t = (TreeNode *)malloc(sizeof(TreeNode));
   int i;
   if (t == NULL)
   {
-    fprintf(listing, "Out of memeory error at line %d\n", lineno);
+    fprintf(listing, "Out of memeory error at line %d\n", lineNo);
   }
   else
   {
@@ -120,15 +120,20 @@ TreeNode *newDclrNode(DclrKind kind, TypeSpecifier type, char* idName, int len, 
     t->sibling = NULL;
     t->nodekind = DclrK;
     t->kind.dclr = kind;
-    t->lineno = lineno;
+    t->lineno = lineNo;
     t->type = type;
-    if (kind == VarK) {
+    if (kind == VarK)
+    {
       t->attr.name = idName;
-    } else if (kind == VarArrK) {
-      t->attr.arr = (Array*)malloc(sizeof(Array));
+    }
+    else if (kind == VarArrK)
+    {
+      t->attr.arr = (Array *)malloc(sizeof(Array));
       strcpy(t->attr.arr->name, idName);
       t->attr.arr->len = len;
-    } else if (kind == FunK) {
+    }
+    else if (kind == FunK)
+    {
       t->attr.name = idName;
       t->child[0] = prms;
       t->child[1] = CompoundStmt;
@@ -137,12 +142,12 @@ TreeNode *newDclrNode(DclrKind kind, TypeSpecifier type, char* idName, int len, 
   return t;
 }
 
-TreeNode *newStmtNode(StmtKind kind)
+TreeNode *newStmtNode(StmtKind kind, int lineNo)
 {
   TreeNode *t = (TreeNode *)malloc(sizeof(TreeNode));
   int i;
   if (t == NULL)
-    fprintf(listing, "Out of memory error at line %d\n", lineno);
+    fprintf(listing, "Out of memory error at line %d\n", lineNo);
   else
   {
     for (i = 0; i < MAXCHILDREN; i++)
@@ -150,7 +155,7 @@ TreeNode *newStmtNode(StmtKind kind)
     t->sibling = NULL;
     t->nodekind = StmtK;
     t->kind.stmt = kind;
-    t->lineno = lineno;
+    t->lineno = lineNo;
   }
   return t;
 }
@@ -158,23 +163,22 @@ TreeNode *newStmtNode(StmtKind kind)
 /* Function newExpNode creates a new expression
  * node for syntax tree construction
  */
-TreeNode *newExpNode(ExpKind kind, TypeSpecifier type)
+TreeNode *newExpNode(ExpKind kind, TypeSpecifier type, int lineNo)
 {
   TreeNode *t = (TreeNode *)malloc(sizeof(TreeNode));
   int i;
   if (t == NULL)
-    fprintf(listing, "Out of memory error at line %d\n", lineno);
+    fprintf(listing, "Out of memory error at line %d\n", lineNo);
   else
   {
     for (i = 0; i < MAXCHILDREN; i++)
     {
-
       t->child[i] = NULL;
     }
     t->sibling = NULL;
     t->nodekind = ExpK;
     t->kind.exp = kind;
-    t->lineno = lineno;
+    t->lineno = lineNo;
     t->type = type;
   }
   return t;
@@ -231,16 +235,43 @@ void printTree(TreeNode *tree)
       switch (tree->kind.stmt)
       {
       case SelectionK:
-        fprintf(listing, "if\n");
+        fprintf(listing, "if:\n");
+        INDENT;
+        printSpaces();
+        fprintf(listing, "Condition:\n");
+        printTree(tree->child[0]);
+        printSpaces();
+        fprintf(listing, "Body:\n");
+        printTree(tree->child[1]->child[0]);
+        printTree(tree->child[1]->child[1]);
+        UNINDENT;
         break;
       case IterationK:
-        fprintf(listing, "while\n");
+        fprintf(listing, "while:\n");
+        INDENT;
+        printSpaces();
+        fprintf(listing, "Condition:\n");
+        printTree(tree->child[0]);
+        printSpaces();
+        fprintf(listing, "Body:\n");
+        printTree(tree->child[1]->child[0]);
+        printTree(tree->child[1]->child[1]);
+        UNINDENT;
         break;
       case ASSIGNK:
-        fprintf(listing, "Assign to: %s\n", tree->attr.name);
+        fprintf(listing, "assign:\n");
+        INDENT;
+        printSpaces();
+        fprintf(listing, "Left:\n");
+        printTree(tree->child[0]);
+        printSpaces();
+        fprintf(listing, "Right:\n");
+        printTree(tree->child[1]);
+        UNINDENT;
         break;
       case ReturnK:
-        fprintf(listing, "Read: %s\n", tree->attr.name);
+        fprintf(listing, "return:\n");
+        printTree(tree->child[0]);
         break;
       default:
         fprintf(listing, "Unknown ExpNode kind\n");
@@ -254,6 +285,14 @@ void printTree(TreeNode *tree)
       case OpK:
         fprintf(listing, "Op: ");
         printToken(tree->attr.op, "\0");
+        INDENT;
+        printSpaces();
+        fprintf(listing, "Left:\n");
+        printTree(tree->child[0]);
+        printSpaces();
+        fprintf(listing, "Right:\n");
+        printTree(tree->child[1]);
+        UNINDENT;
         break;
       case ConstK:
         fprintf(listing, "Const: %d\n", tree->attr.val);
@@ -262,17 +301,61 @@ void printTree(TreeNode *tree)
         fprintf(listing, "Id: %s\n", tree->attr.name);
         break;
       case IdArrK:
-        fprintf(listing, "Array: %s\n Index: \n", tree->attr.name);
+        fprintf(listing, "Array[Index]: %s\n", tree->attr.arr->name);
+        INDENT;
+        printSpaces();
+        fprintf(listing, "Index:\n");
+        printTree(tree->child[0]);
+        UNINDENT;
+        break;
+      case CallK:
+        fprintf(listing, "Call: %s\n", tree->attr.name);
+        INDENT;
+        printSpaces();
+        fprintf(listing, "Args:\n");
+        printTree(tree->child[0]);
+        UNINDENT;
         break;
       default:
         fprintf(listing, "Unknown ExpNode kind\n");
         break;
       }
     }
+    else if (tree->nodekind == DclrK)
+    {
+      switch (tree->kind.dclr)
+      {
+      case VarK:
+        fprintf(listing, "Declare variable: %s\n", tree->attr.name);
+        break;
+      case VarArrK:
+        if (tree->attr.arr->len == 0)
+        {
+          fprintf(listing, "Declare array: %s[]\n", tree->attr.arr->name);
+        }
+        else
+        {
+          fprintf(listing, "Declare array: %s[%d]\n", tree->attr.arr->name, tree->attr.arr->len);
+        }
+        break;
+      case FunK:
+        fprintf(listing, "Declare function: %s\n", tree->attr.name);
+        INDENT;
+        printSpaces();
+        fprintf(listing, "params:\n");
+        printTree(tree->child[0]);
+        printSpaces();
+        fprintf(listing, "Function Body:\n");
+        printTree(tree->child[1]->child[0]);
+        printTree(tree->child[1]->child[1]);
+        UNINDENT;
+        break;
+      }
+    }
     else
+    {
       fprintf(listing, "Unknown node kind\n");
-    for (i = 0; i < MAXCHILDREN; i++)
-      printTree(tree->child[i]);
+    }
     tree = tree->sibling;
   }
   UNINDENT;

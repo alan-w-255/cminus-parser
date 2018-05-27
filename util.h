@@ -15,17 +15,17 @@
  */
 void printToken(TokenType, const char *);
 
-TreeNode *newDclrNode(DclrKind kind, TypeSpecifier type, char* idName, int arrLen, TreeNode* prms, TreeNode* compoundStmt);
+TreeNode *newDclrNode(DclrKind kind, TypeSpecifier type, char* idName, int arrLen, TreeNode* prms, TreeNode* compoundStmt, int);
 
 /* Function newStmtNode creates a new statement
  * node for syntax tree construction
  */
-TreeNode *newStmtNode(StmtKind);
+TreeNode *newStmtNode(StmtKind, int);
 
 /* Function newExpNode creates a new expression 
  * node for syntax tree construction
  */
-TreeNode *newExpNode(ExpKind, TypeSpecifier);
+TreeNode *newExpNode(ExpKind, TypeSpecifier, int);
 
 /* Function copyString allocates and makes a new
  * copy of an existing string
