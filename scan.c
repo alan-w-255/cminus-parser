@@ -201,7 +201,9 @@ TokenType getToken(void)
       else
       {
         ungetNextChar();
-        state = DIV;
+        tokenString[tokenStringIndex++] = (char)'/';
+        currentToken = DIV;
+        state = DONE;
       }
       break;
     case INCOMMENT:

@@ -242,8 +242,15 @@ void printTree(TreeNode *tree)
         printTree(tree->child[0]);
         printSpaces();
         fprintf(listing, "Body:\n");
-        printTree(tree->child[1]->child[0]);
-        printTree(tree->child[1]->child[1]);
+        if(tree->child[1]->kind.stmt == CompoundK){
+          printTree(tree->child[1]->child[0]);
+          printTree(tree->child[1]->child[1]);
+        } else {
+          printTree(tree->child[1]);
+          printSpaces();
+          fprintf(listing, "Else body:\n");
+          printTree(tree->child[2]);
+        }
         UNINDENT;
         break;
       case IterationK:

@@ -529,8 +529,11 @@ static void syntaxError(char *message)
 
 static void match(TokenType expected)
 {
-  if (token->type == expected && token->next != NULL)
+  if (token->type == expected && token->next != NULL){
     token = token->next;
+  } else if (token->type == ERROR) {
+    token= token->next;
+  }
   else
   {
     syntaxError("unexpected token -> ");
