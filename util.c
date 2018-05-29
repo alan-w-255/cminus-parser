@@ -222,7 +222,6 @@ static void printSpaces(void)
 /* procedure printTree prints a syntax tree to the
  * listing file using indentation to indicate subtrees
  */
-// todo: 完成打印语法树的函数
 void printTree(TreeNode *tree)
 {
   int i;
@@ -268,11 +267,7 @@ void printTree(TreeNode *tree)
       case ASSIGNK:
         fprintf(listing, "assign:\n");
         INDENT;
-        printSpaces();
-        fprintf(listing, "Left:\n");
         printTree(tree->child[0]);
-        printSpaces();
-        fprintf(listing, "Right:\n");
         printTree(tree->child[1]);
         UNINDENT;
         break;
@@ -293,11 +288,7 @@ void printTree(TreeNode *tree)
         fprintf(listing, "Op: ");
         printToken(tree->attr.op, "\0");
         INDENT;
-        printSpaces();
-        fprintf(listing, "Left:\n");
         printTree(tree->child[0]);
-        printSpaces();
-        fprintf(listing, "Right:\n");
         printTree(tree->child[1]);
         UNINDENT;
         break;
@@ -308,7 +299,7 @@ void printTree(TreeNode *tree)
         fprintf(listing, "Id: %s\n", tree->attr.name);
         break;
       case IdArrK:
-        fprintf(listing, "Array[Index]: %s\n", tree->attr.arr->name);
+        fprintf(listing, "Subscript: %s\n", tree->attr.arr->name);
         INDENT;
         printSpaces();
         fprintf(listing, "Index:\n");
@@ -366,4 +357,27 @@ void printTree(TreeNode *tree)
     tree = tree->sibling;
   }
   UNINDENT;
+}
+
+void destroySyntaxTree(TreeNode *tree){
+  while(tree != NULL) {
+    int i;
+    for(i = 0; i < MAXCHILDREN; i++) {
+      destroySyntaxTree(tree->child[i]);
+    }
+    switch(tree->nodekind){
+      case ExpK:
+      break;
+      case StmtK:
+      break;
+      case DclrK:
+      if(tree->kind.dclr == VarArrK){
+        free(tree->attr.arr);
+      }
+      break;
+      default:
+      break;
+    }
+    tree = tree->sibling;
+  }
 }

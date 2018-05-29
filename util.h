@@ -37,4 +37,6 @@ char *copyString(char *);
  */
 void printTree(TreeNode *);
 
+void destroySyntaxTree(TreeNode *);
+
 #endif

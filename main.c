@@ -20,7 +20,7 @@
 /* set SAVE_SCAN_RESULT_TOFILE to TRUE to save scan
  * result to file "scan_result.txt"
  */
-#define SAVE_RESULT_TO_FILE FALSE
+#define SAVE_RESULT_TO_FILE TRUE
 
 #include "util.h"
 #if NO_PARSE
@@ -78,51 +78,18 @@ int main(int argc, char *argv[]) {
   fprintf(listing, "C-minus COMPILATION: %s\n", pgm);
 #else
   listing = stdout; /* send listing to screen */
-  fprintf(listing, "\nTINY COMPILATION: %s\n", pgm);
+  fprintf(listing, "\nC-minus COMPILATION: %s\n", pgm);
 #endif
 
 // 如果没有语法分析, 仅做词法扫描
-#if NO_PARSE
-  while (getToken() != ENDFILE)
-    ;
-  fclose(listing);
-#else
   scan();
   syntaxTree = parse();
   if (TraceParse) {
     fprintf(listing, "\nSyntax tree:\n");
     printTree(syntaxTree);
   }
-#if !NO_ANALYZE
-  if (!Error) {
-    if (TraceAnalyze)
-      fprintf(listing, "\nBuilding Symbol Table...\n");
-    buildSymtab(syntaxTree);
-    if (TraceAnalyze)
-      fprintf(listing, "\nChecking Types...\n");
-    typeCheck(syntaxTree);
-    if (TraceAnalyze)
-      fprintf(listing, "\nType Checking Finished\n");
-  }
-#if !NO_CODE
-  if (!Error) {
-    char *codefile;
-    int fnlen = strcspn(pgm, ".");
-    codefile = (char *)calloc(fnlen + 4, sizeof(char));
-    strncpy(codefile, pgm, fnlen);
-    strcat(codefile, ".tm");
-    code = fopen(codefile, "w");
-    if (code == NULL) {
-      printf("Unable to open %s\n", codefile);
-      exit(1);
-    }
-    codeGen(syntaxTree, codefile);
-    fclose(code);
-  }
-#endif
-#endif
-#endif
   destroyTokenTable();
+  destroySyntaxTree(syntaxTree);
   fclose(source);
   fclose(listing);
   return 0;
